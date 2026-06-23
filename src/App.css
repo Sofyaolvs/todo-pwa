@@ -245,6 +245,42 @@ footer button {
   text-decoration: underline;
 }
 
+/* Notification panel */
+.notif-panel {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.notif-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1.5px solid rgba(255,255,255,0.4);
+  color: white;
+  padding: 9px 20px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.notif-btn:hover { background: rgba(255,255,255,0.25); }
+
+.notif-btn--test {
+  background: rgba(255,255,255,0.9);
+  color: #6366f1;
+  border-color: transparent;
+}
+.notif-btn--test:hover { background: white; }
+
+.notif-info {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.6);
+  text-align: center;
+}
+.notif-denied { color: #fca5a5; }
+
 /* PWA feature indicators */
 .pwa-info {
   display: flex;

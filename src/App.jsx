@@ -22,6 +22,9 @@ function App() {
   const [installPrompt, setInstallPrompt] = useState(null)
   const [installed, setInstalled] = useState(false)
   const [swReady, setSwReady] = useState(false)
+  const [notifPerm, setNotifPerm] = useState(
+    'Notification' in window ? Notification.permission : 'unsupported'
+  )
 
   useEffect(() => {
     localStorage.setItem('tasks', JSON.stringify(tasks))
@@ -68,6 +71,27 @@ function App() {
     }
   }
 
+  const requestNotifPermission = async () => {
+    if (!('Notification' in window)) return
+    const perm = await Notification.requestPermission()
+    setNotifPerm(perm)
+  }
+
+  const sendTestNotif = async () => {
+    if (notifPerm !== 'granted') return
+    const reg = await navigator.serviceWorker.ready
+    const count = tasks.filter(t => !t.done).length
+    reg.showNotification('Lista de Tarefas', {
+      body: count > 0
+        ? `Você tem ${count} tarefa${count !== 1 ? 's' : ''} pendente${count !== 1 ? 's' : ''}.`
+        : 'Nenhuma tarefa pendente. Bom trabalho!',
+      icon: '/icon.svg',
+      badge: '/icon.svg',
+      vibrate: [200, 100, 200],
+      data: { url: '/?app=1' },
+    })
+  }
+
   if (!standalone) {
     return (
       <LandingPage
@@ -102,16 +126,14 @@ function App() {
       <div className={`status-bar ${isOnline ? 'online' : 'offline'}`}>
         <span className="dot" />
         {isOnline ? 'Online' : 'Offline — dados salvos localmente'}
-        {swReady && isOnline && <span className="sw-badge">Service Worker ativo</span>}
+        {swReady && isOnline && <span className="sw-badge">SW ativo</span>}
       </div>
 
       <div className="card">
         <header>
           <h1>Tarefas</h1>
           {installPrompt && !installed && (
-            <button className="install-btn" onClick={handleInstall}>
-              Instalar App
-            </button>
+            <button className="install-btn" onClick={handleInstall}>Instalar</button>
           )}
           {installed && <span className="installed-badge">Instalado</span>}
         </header>
@@ -145,7 +167,7 @@ function App() {
                 <input type="checkbox" checked={task.done} onChange={() => toggle(task.id)} />
                 <span>{task.text}</span>
               </label>
-              <button className="del" onClick={() => remove(task.id)} title="Remover">x</button>
+              <button className="del" onClick={() => remove(task.id)} title="Remover">×</button>
             </li>
           ))}
         </ul>
@@ -160,10 +182,30 @@ function App() {
         )}
       </div>
 
+      <div className="notif-panel">
+        {notifPerm === 'unsupported' && (
+          <p className="notif-info">Notificações não suportadas neste navegador.</p>
+        )}
+        {notifPerm === 'denied' && (
+          <p className="notif-info notif-denied">Notificações bloqueadas — libere nas configurações do navegador.</p>
+        )}
+        {notifPerm === 'default' && (
+          <button className="notif-btn" onClick={requestNotifPermission}>
+            Ativar notificações
+          </button>
+        )}
+        {notifPerm === 'granted' && (
+          <button className="notif-btn notif-btn--test" onClick={sendTestNotif}>
+            Testar notificação
+          </button>
+        )}
+      </div>
+
       <div className="pwa-info">
-        <span className={`pwa-feature ${swReady ? 'ok' : ''}`}>Cache offline</span>
-        <span className={`pwa-feature ${installPrompt || installed ? 'ok' : ''}`}>Instalavel</span>
-        <span className={`pwa-feature ok`}>Dados locais</span>
+        <span className={`pwa-feature ${swReady ? 'ok' : ''}`}>Offline</span>
+        <span className={`pwa-feature ${installPrompt || installed ? 'ok' : ''}`}>Instalável</span>
+        <span className={`pwa-feature ${notifPerm === 'granted' ? 'ok' : ''}`}>Push</span>
+        <span className="pwa-feature ok">Dados locais</span>
       </div>
     </div>
   )

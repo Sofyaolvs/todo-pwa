@@ -20,6 +20,7 @@ const INSTALL_HINTS = {
 
 export default function LandingPage({ installPrompt, installed, onInstall }) {
   const appUrl = window.location.origin + window.location.pathname
+  const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/.test(appUrl)
   const browser = detectBrowser()
 
   return (
@@ -50,6 +51,11 @@ export default function LandingPage({ installPrompt, installed, onInstall }) {
           <div className="lp-qr">
             <QRCodeSVG value={appUrl} size={160} bgColor="#fff" fgColor="#111827" level="M" />
           </div>
+          {isLocalhost && (
+            <p className="lp-warn">
+              Em rede local — acesse pelo IP da máquina, não localhost
+            </p>
+          )}
         </section>
 
         <div className="lp-divider"><span>ou</span></div>
