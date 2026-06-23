@@ -1,0 +1,144 @@
+.lp {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  background: #f9fafb;
+  gap: 2.5rem;
+}
+
+/* Header */
+.lp-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.lp-logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.lp-logo svg { width: 100%; height: 100%; display: block; }
+
+.lp-name {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.3px;
+}
+
+.lp-tagline {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+/* Main */
+.lp-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 320px;
+}
+
+.lp-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+.lp-section-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* QR */
+.lp-qr {
+  padding: 16px;
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  line-height: 0;
+}
+.lp-qr svg { display: block; border-radius: 4px; }
+
+/* Divider */
+.lp-divider {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 1rem;
+  color: #d1d5db;
+  font-size: 0.8rem;
+}
+.lp-divider::before,
+.lp-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+/* Buttons */
+.lp-btn {
+  width: 100%;
+  padding: 13px;
+  background: #111827;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.lp-btn:hover { background: #1f2937; }
+
+.lp-btn--outline {
+  background: white;
+  color: #111827;
+  border: 1.5px solid #d1d5db;
+}
+.lp-btn--outline:hover { border-color: #9ca3af; background: #f9fafb; }
+
+.lp-installed {
+  font-size: 0.9rem;
+  color: #059669;
+  font-weight: 600;
+}
+
+.lp-hint {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* Footer */
+.lp-footer { margin-top: 0.5rem; }
+
+.lp-skip {
+  font-size: 0.82rem;
+  color: #9ca3af;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.lp-skip:hover { color: #6b7280; }
+
+/* Mobile */
+@media (max-width: 400px) {
+  .lp { padding: 1.5rem 1rem; }
+  .lp-name { font-size: 1.2rem; }
+}
