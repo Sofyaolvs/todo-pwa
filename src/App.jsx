@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import LandingPage from './LandingPage'
+import SharePanel from './components/SharePanel'
+import { useShoppingList, CATEGORIES, UNITS } from './hooks/useShoppingList'
 
 function isStandaloneMode() {
   return (
@@ -12,23 +14,32 @@ function isStandaloneMode() {
 
 function App() {
   const [standalone, setStandalone] = useState(isStandaloneMode)
-
-  const [tasks, setTasks] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('tasks')) || [] } catch { return [] }
-  })
-  const [input, setInput] = useState('')
-  const [filter, setFilter] = useState('all')
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [installPrompt, setInstallPrompt] = useState(null)
-  const [installed, setInstalled] = useState(false)
-  const [swReady, setSwReady] = useState(false)
-  const [notifPerm, setNotifPerm] = useState(
-    'Notification' in window ? Notification.permission : 'unsupported'
-  )
+  const [showShare, setShowShare] = useState(false)
+  const [filter, setFilter] = useState('all')
+  const [editingId, setEditingId] = useState(null)
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [titleDraft, setTitleDraft] = useState('')
 
-  useEffect(() => {
-    localStorage.setItem('tasks', JSON.stringify(tasks))
-  }, [tasks])
+  const [name, setName] = useState('')
+  const [quantity, setQuantity] = useState('1')
+  const [unit, setUnit] = useState('un')
+  const [category, setCategory] = useState('Outros')
+
+  const {
+    activeList,
+    loading,
+    importNotice,
+    dismissNotice,
+    addItem,
+    toggleItem,
+    removeItem,
+    editItem,
+    clearChecked,
+    renameList,
+    importSharedList,
+  } = useShoppingList(isOnline)
 
   useEffect(() => {
     const on = () => setIsOnline(true)
@@ -41,17 +52,7 @@ function App() {
   useEffect(() => {
     const handler = (e) => { e.preventDefault(); setInstallPrompt(e) }
     window.addEventListener('beforeinstallprompt', handler)
-    window.addEventListener('appinstalled', () => {
-      setInstalled(true)
-      setInstallPrompt(null)
-    })
     return () => window.removeEventListener('beforeinstallprompt', handler)
-  }, [])
-
-  useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(() => setSwReady(true))
-    }
   }, [])
 
   useEffect(() => {
@@ -60,6 +61,22 @@ function App() {
     mq.addEventListener('change', onChange)
     return () => mq.removeEventListener('change', onChange)
   }, [])
+
+  const shareTargetHandled = useRef(false)
+
+  useEffect(() => {
+    if (shareTargetHandled.current || !activeList || !standalone) return
+    const params = new URLSearchParams(window.location.search)
+    const sharedText = params.get('text') || params.get('title')
+    if (!sharedText) return
+    shareTargetHandled.current = true
+    addItem(sharedText, 1, 'un', 'Outros')
+    params.delete('text')
+    params.delete('title')
+    params.delete('url')
+    const qs = params.toString()
+    window.history.replaceState({}, '', qs ? `?${qs}` : window.location.pathname)
+  }, [activeList, standalone, addItem])
 
   const handleInstall = async () => {
     if (!installPrompt) return
@@ -71,142 +88,199 @@ function App() {
     }
   }
 
-  const requestNotifPermission = async () => {
-    if (!('Notification' in window)) return
-    const perm = await Notification.requestPermission()
-    setNotifPerm(perm)
+  const handleAddItem = async () => {
+    const q = parseFloat(quantity) || 1
+    await addItem(name, q, unit, category)
+    setName('')
+    setQuantity('1')
   }
 
-  const sendTestNotif = async () => {
-    if (notifPerm !== 'granted') return
-    const reg = await navigator.serviceWorker.ready
-    const count = tasks.filter(t => !t.done).length
-    reg.showNotification('Lista de Tarefas', {
-      body: count > 0
-        ? `Você tem ${count} tarefa${count !== 1 ? 's' : ''} pendente${count !== 1 ? 's' : ''}.`
-        : 'Nenhuma tarefa pendente. Bom trabalho!',
-      icon: '/icon.svg',
-      badge: '/icon.svg',
-      vibrate: [200, 100, 200],
-      data: { url: '/?app=1' },
-    })
+  const startEditTitle = () => {
+    setTitleDraft(activeList?.name ?? '')
+    setEditingTitle(true)
+  }
+
+  const saveTitle = async () => {
+    const trimmed = titleDraft.trim()
+    if (trimmed && activeList) await renameList(trimmed)
+    setEditingTitle(false)
   }
 
   if (!standalone) {
     return (
       <LandingPage
         installPrompt={installPrompt}
-        installed={installed}
         onInstall={handleInstall}
       />
     )
   }
 
-  const addTask = () => {
-    const text = input.trim()
-    if (!text) return
-    setTasks(prev => [...prev, { id: Date.now(), text, done: false }])
-    setInput('')
+  if (loading) {
+    return (
+      <div className="app">
+        <div className="app-header" />
+        <div className="sheet sheet--loading">Carregando…</div>
+      </div>
+    )
   }
 
-  const toggle = (id) => setTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t))
-  const remove = (id) => setTasks(prev => prev.filter(t => t.id !== id))
-  const clearDone = () => setTasks(prev => prev.filter(t => !t.done))
-
-  const filtered = tasks.filter(t => {
-    if (filter === 'active') return !t.done
-    if (filter === 'done') return t.done
+  const filteredItems = (activeList?.items ?? []).filter((item) => {
+    if (filter === 'pending' && item.checked) return false
+    if (filter === 'done' && !item.checked) return false
     return true
   })
 
-  const activeCount = tasks.filter(t => !t.done).length
+  const pendingCount = activeList?.items.filter((i) => !i.checked).length ?? 0
+  const checkedCount = activeList?.items.filter((i) => i.checked).length ?? 0
 
   return (
     <div className="app">
-      <div className={`status-bar ${isOnline ? 'online' : 'offline'}`}>
-        <span className="dot" />
-        {isOnline ? 'Online' : 'Offline — dados salvos localmente'}
-        {swReady && isOnline && <span className="sw-badge">SW ativo</span>}
-      </div>
-
-      <div className="card">
-        <header>
-          <h1>Tarefas</h1>
-          {installPrompt && !installed && (
-            <button className="install-btn" onClick={handleInstall}>Instalar</button>
-          )}
-          {installed && <span className="installed-badge">Instalado</span>}
-        </header>
-
-        <div className="input-row">
-          <input
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && addTask()}
-            placeholder="Nova tarefa..."
-            autoFocus
-          />
-          <button onClick={addTask}>Adicionar</button>
+      <header className="app-header">
+        {!isOnline && (
+          <p className="offline-banner">Sem internet — salvo no aparelho</p>
+        )}
+        <div className="app-header-row">
+          <div>
+            <p className="app-label">Lista</p>
+            {editingTitle ? (
+              <input
+                className="title-edit"
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onBlur={saveTitle}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveTitle()
+                  if (e.key === 'Escape') setEditingTitle(false)
+                }}
+                autoFocus
+              />
+            ) : (
+              <button type="button" className="title-btn" onClick={startEditTitle}>
+                <h1>{activeList?.name ?? 'Compras'}</h1>
+                <span className="title-edit-hint">✎</span>
+              </button>
+            )}
+          </div>
+          <div className="app-header-actions">
+            {pendingCount > 0 && (
+              <span className="count-badge">{pendingCount}</span>
+            )}
+            <button type="button" className="btn-share" onClick={() => setShowShare(true)}>
+              Compartilhar
+            </button>
+          </div>
         </div>
+      </header>
 
-        <div className="filters">
-          {[['all', 'Todas'], ['active', 'Ativas'], ['done', 'Concluidas']].map(([key, label]) => (
-            <button key={key} className={filter === key ? 'active' : ''} onClick={() => setFilter(key)}>
+      {importNotice && (
+        <div className="toast" onClick={dismissNotice}>{importNotice}</div>
+      )}
+
+      <main className="sheet">
+        <form className="add-form" onSubmit={(e) => { e.preventDefault(); handleAddItem() }}>
+          <div className="add-main">
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Adicionar item…"
+            />
+            <button type="submit" className="btn-add" disabled={!name.trim()} aria-label="Adicionar">+</button>
+          </div>
+          <div className="add-meta">
+            <input
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              className="qty"
+              aria-label="Quantidade"
+            />
+            <select value={unit} onChange={(e) => setUnit(e.target.value)} aria-label="Unidade">
+              {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+            </select>
+            <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Categoria">
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        </form>
+
+        <div className="tabs">
+          {[['all', 'Todos'], ['pending', 'Faltam'], ['done', 'Pegos']].map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              className={filter === key ? 'active' : ''}
+              onClick={() => setFilter(key)}
+            >
               {label}
             </button>
           ))}
         </div>
 
-        <ul className="task-list">
-          {filtered.length === 0 && (
-            <li className="empty">Nenhuma tarefa aqui.</li>
+        <ul className="items">
+          {filteredItems.length === 0 && (
+            <li className="empty">Nada na lista ainda</li>
           )}
-          {filtered.map(task => (
-            <li key={task.id} className={task.done ? 'done' : ''}>
-              <label>
-                <input type="checkbox" checked={task.done} onChange={() => toggle(task.id)} />
-                <span>{task.text}</span>
+          {filteredItems.map((item) => (
+            <li key={item.id} className={item.checked ? 'done' : ''}>
+              <label className="item-check">
+                <input
+                  type="checkbox"
+                  checked={item.checked}
+                  onChange={() => toggleItem(item.id)}
+                />
+                <span className="check-ui" />
               </label>
-              <button className="del" onClick={() => remove(task.id)} title="Remover">×</button>
+              <div className="item-body">
+                {editingId === item.id ? (
+                  <input
+                    className="inline-edit"
+                    defaultValue={item.name}
+                    autoFocus
+                    onBlur={(e) => {
+                      editItem(item.id, { name: e.target.value.trim() || item.name })
+                      setEditingId(null)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') e.target.blur()
+                      if (e.key === 'Escape') setEditingId(null)
+                    }}
+                  />
+                ) : (
+                  <span className="item-text" onDoubleClick={() => setEditingId(item.id)}>
+                    {(item.quantity > 1 || item.unit !== 'un') && (
+                      <span className="item-qty">{item.quantity} {item.unit}</span>
+                    )}
+                    {item.name}
+                  </span>
+                )}
+                {item.category !== 'Outros' && (
+                  <span className="item-cat">{item.category}</span>
+                )}
+              </div>
+              <button type="button" className="item-remove" onClick={() => removeItem(item.id)} aria-label="Remover">×</button>
             </li>
           ))}
         </ul>
 
-        {tasks.length > 0 && (
+        {(activeList?.items.length ?? 0) > 0 && (
           <footer>
-            <span>{activeCount} {activeCount === 1 ? 'tarefa restante' : 'tarefas restantes'}</span>
-            {tasks.some(t => t.done) && (
-              <button onClick={clearDone}>Limpar concluidas</button>
+            <span>{pendingCount} {pendingCount === 1 ? 'item' : 'itens'} restante{pendingCount !== 1 ? 's' : ''}</span>
+            {checkedCount > 0 && (
+              <button type="button" className="link" onClick={clearChecked}>Limpar pegos</button>
             )}
           </footer>
         )}
-      </div>
+      </main>
 
-      <div className="notif-panel">
-        {notifPerm === 'unsupported' && (
-          <p className="notif-info">Notificações não suportadas neste navegador.</p>
-        )}
-        {notifPerm === 'denied' && (
-          <p className="notif-info notif-denied">Notificações bloqueadas — libere nas configurações do navegador.</p>
-        )}
-        {notifPerm === 'default' && (
-          <button className="notif-btn" onClick={requestNotifPermission}>
-            Ativar notificações
-          </button>
-        )}
-        {notifPerm === 'granted' && (
-          <button className="notif-btn notif-btn--test" onClick={sendTestNotif}>
-            Testar notificação
-          </button>
-        )}
-      </div>
-
-      <div className="pwa-info">
-        <span className={`pwa-feature ${swReady ? 'ok' : ''}`}>Offline</span>
-        <span className={`pwa-feature ${installPrompt || installed ? 'ok' : ''}`}>Instalável</span>
-        <span className={`pwa-feature ${notifPerm === 'granted' ? 'ok' : ''}`}>Push</span>
-        <span className="pwa-feature ok">Dados locais</span>
-      </div>
+      {showShare && (
+        <SharePanel
+          list={activeList}
+          onImport={importSharedList}
+          onClose={() => setShowShare(false)}
+        />
+      )}
     </div>
   )
 }

@@ -3,8 +3,25 @@ import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
 precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
 
+const SYNC_TAG = 'shopping-list-sync'
+
+self.addEventListener('sync', (event) => {
+  if (event.tag === SYNC_TAG) {
+    event.waitUntil(
+      self.registration.showNotification('voltou a internet', {
+        body: 'alterações salvas',
+        icon: '/icon.svg',
+        badge: '/icon.svg',
+        vibrate: [100, 50, 100],
+        tag: 'sync-complete',
+        data: { url: '/?app=1' },
+      })
+    )
+  }
+})
+
 self.addEventListener('push', (event) => {
-  const data = event.data?.json() ?? { title: 'Lista de Tarefas', body: 'Você tem tarefas pendentes' }
+  const data = event.data?.json() ?? { title: 'Lista de Compras', body: 'A lista foi atualizada' }
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,

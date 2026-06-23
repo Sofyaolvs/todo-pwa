@@ -10,82 +10,47 @@ function detectBrowser() {
   return 'other'
 }
 
-const INSTALL_HINTS = {
-  chrome: 'Clique no ícone ⬇ na barra de endereço do Chrome',
-  edge: 'Clique em ··· → Aplicativos → Instalar este site como aplicativo',
-  safari: 'Toque em Compartilhar → Adicionar à Tela de Início',
-  firefox: 'Firefox não suporta instalação de PWA no desktop',
-  other: 'Use Chrome ou Edge para instalar',
+const HINTS = {
+  chrome: 'Ícone de instalar na barra de endereço',
+  edge: 'Menu ··· → Instalar',
+  safari: 'Compartilhar → Tela de Início',
+  firefox: 'No Firefox desktop não instala PWA',
+  other: 'Tente no Chrome ou Edge',
 }
 
-export default function LandingPage({ installPrompt, installed, onInstall }) {
-  const appUrl = window.location.origin + window.location.pathname
+export default function LandingPage({ installPrompt, onInstall }) {
+  const appUrl = window.location.origin + window.location.pathname + '?app=1'
   const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/.test(appUrl)
   const browser = detectBrowser()
 
   return (
     <div className="lp">
-      <header className="lp-header">
-        <div className="lp-logo">
-          <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-            <rect width="512" height="512" rx="96" fill="#6366f1"/>
-            <rect x="140" y="170" width="220" height="28" rx="14" fill="white" opacity="0.9"/>
-            <rect x="140" y="220" width="260" height="28" rx="14" fill="white" opacity="0.7"/>
-            <rect x="140" y="270" width="170" height="28" rx="14" fill="white" opacity="0.5"/>
-            <circle cx="106" cy="184" r="18" fill="white" opacity="0.9"/>
-            <polyline points="97,184 103,191 116,174" stroke="#6366f1" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-            <circle cx="106" cy="234" r="18" fill="white" opacity="0.7"/>
-            <polyline points="97,234 103,241 116,224" stroke="#6366f1" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-            <circle cx="106" cy="284" r="18" fill="white" opacity="0.5"/>
-          </svg>
+      <div className="lp-card">
+        <img src="/icon.svg" alt="" className="lp-icon" width="56" height="56" />
+        <h1>Compras</h1>
+        <p className="lp-sub">Lista pro mercado. Funciona offline.</p>
+
+        <div className="lp-qr">
+          <QRCodeSVG value={appUrl} size={152} bgColor="#fffcf8" fgColor="#1c1917" level="M" />
         </div>
-        <div>
-          <h1 className="lp-name">Lista de Tarefas</h1>
-          <p className="lp-tagline">Simples. Offline. Sem conta.</p>
-        </div>
-      </header>
+        <p className="lp-qr-label">Escaneie no celular</p>
 
-      <main className="lp-main">
-        <section className="lp-section">
-          <p className="lp-section-label">No celular — escaneie para instalar</p>
-          <div className="lp-qr">
-            <QRCodeSVG value={appUrl} size={160} bgColor="#fff" fgColor="#111827" level="M" />
-          </div>
-          {isLocalhost && (
-            <p className="lp-warn">
-              Em rede local — acesse pelo IP da máquina, não localhost
-            </p>
-          )}
-        </section>
+        {isLocalhost && (
+          <p className="lp-note">Localhost — no celular use o IP da máquina</p>
+        )}
 
-        <div className="lp-divider"><span>ou</span></div>
+        {installPrompt ? (
+          <button type="button" className="lp-btn" onClick={onInstall}>Instalar</button>
+        ) : (
+          <a href="?app=1" className="lp-btn">Abrir app</a>
+        )}
 
-        <section className="lp-section">
-          <p className="lp-section-label">No computador</p>
-          {installed ? (
-            <p className="lp-installed">Instalado</p>
-          ) : installPrompt ? (
-            <button className="lp-btn" onClick={onInstall}>Instalar app</button>
-          ) : (
-            <>
-              <button
-                className="lp-btn lp-btn--outline"
-                onClick={() => {
-                  if (installPrompt) { onInstall(); return }
-                  window.open(appUrl, '_blank')
-                }}
-              >
-                Abrir no navegador
-              </button>
-              <p className="lp-hint">{INSTALL_HINTS[browser]}</p>
-            </>
-          )}
-        </section>
-      </main>
+        {!installPrompt && (
+          <p className="lp-hint">{HINTS[browser]}</p>
+        )}
+      </div>
 
-      <footer className="lp-footer">
-        <a href="?app=1" className="lp-skip">Acessar direto →</a>
-      </footer>
+      <a href="?app=1" className="lp-skip">Entrar sem instalar</a>
     </div>
   )
 }
