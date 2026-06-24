@@ -515,15 +515,6 @@ footer {
   font-weight: 700;
 }
 
-.share-qr {
-  display: flex;
-  justify-content: center;
-  padding: 16px;
-  background: #fff;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius);
-  margin-bottom: 16px;
-}
 
 .share-actions {
   display: flex;

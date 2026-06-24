@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { QRCodeSVG } from 'qrcode.react'
 import { buildShareUrl } from '../utils/listShare'
 
 export default function SharePanel({ list, onImport, onClose }) {
@@ -50,10 +49,6 @@ export default function SharePanel({ list, onImport, onClose }) {
         </header>
 
         <p className="share-code">Código <strong>{list.shareCode}</strong></p>
-
-        <div className="share-qr">
-          <QRCodeSVG value={shareUrl} size={128} bgColor="#fff" fgColor="#1a1a1a" level="M" />
-        </div>
 
         <div className="share-actions">
           <button type="button" className="share-btn" onClick={handleCopy}>
