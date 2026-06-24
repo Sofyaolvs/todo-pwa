@@ -78,6 +78,7 @@ export async function sendTestNotification() {
     badge: '/icon.svg',
     vibrate: [100, 50, 100],
     tag: 'test-notification',
+    renotify: true,
     data: { url: '/?app=1' },
   }
 
@@ -101,6 +102,7 @@ export async function notifyListUpdated(listName, pendingCount) {
     badge: '/icon.svg',
     vibrate: [100, 50, 100],
     tag: 'list-update',
+    renotify: true,
     data: { url: '/?app=1' },
   })
 }

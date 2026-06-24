@@ -14,6 +14,7 @@ self.addEventListener('sync', (event) => {
         badge: '/icon.svg',
         vibrate: [100, 50, 100],
         tag: 'sync-complete',
+        renotify: true,
         data: { url: '/?app=1' },
       })
     )
