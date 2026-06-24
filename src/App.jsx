@@ -3,6 +3,7 @@ import './App.css'
 import LandingPage from './LandingPage'
 import SharePanel from './components/SharePanel'
 import { useShoppingList, CATEGORIES, UNITS } from './hooks/useShoppingList'
+import { sendTestNotification } from './sync'
 
 function isStandaloneMode() {
   return (
@@ -21,6 +22,7 @@ function App() {
   const [editingId, setEditingId] = useState(null)
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState('')
+  const [notifyMsg, setNotifyMsg] = useState('')
 
   const [name, setName] = useState('')
   const [quantity, setQuantity] = useState('1')
@@ -95,6 +97,20 @@ function App() {
     setQuantity('1')
   }
 
+  const handleTestNotification = async () => {
+    const result = await sendTestNotification()
+    if (result.ok) {
+      setNotifyMsg('Notificação enviada 🔔')
+    } else if (result.reason === 'unsupported') {
+      setNotifyMsg('Notificações não suportadas neste navegador')
+    } else if (result.reason === 'denied') {
+      setNotifyMsg('Permissão negada — libere nas configurações do site')
+    } else {
+      setNotifyMsg('Permissão não concedida')
+    }
+    setTimeout(() => setNotifyMsg(''), 3000)
+  }
+
   const startEditTitle = () => {
     setTitleDraft(activeList?.name ?? '')
     setEditingTitle(true)
@@ -165,6 +181,15 @@ function App() {
             {pendingCount > 0 && (
               <span className="count-badge">{pendingCount}</span>
             )}
+            <button
+              type="button"
+              className="btn-bell"
+              onClick={handleTestNotification}
+              aria-label="Testar notificação"
+              title="Testar notificação"
+            >
+              🔔
+            </button>
             <button type="button" className="btn-share" onClick={() => setShowShare(true)}>
               Compartilhar
             </button>
@@ -174,6 +199,10 @@ function App() {
 
       {importNotice && (
         <div className="toast" onClick={dismissNotice}>{importNotice}</div>
+      )}
+
+      {notifyMsg && (
+        <div className="toast" onClick={() => setNotifyMsg('')}>{notifyMsg}</div>
       )}
 
       <main className="sheet">

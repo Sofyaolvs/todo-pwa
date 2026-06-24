@@ -101,6 +101,24 @@
   padding: 0 8px;
 }
 
+.btn-bell {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 99px;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.15s, background 0.15s;
+}
+.btn-bell:hover { background: rgba(255,255,255,0.32); }
+.btn-bell:active { transform: scale(0.92); }
+
 .btn-share {
   background: #fff;
   color: var(--accent);

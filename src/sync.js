@@ -59,6 +59,37 @@ export async function processSyncQueue(lists, saveList, getSyncQueue, clearSyncQ
   return { processed: queue.length, lists: updatedLists }
 }
 
+export async function sendTestNotification() {
+  if (!('Notification' in window)) {
+    return { ok: false, reason: 'unsupported' }
+  }
+
+  let permission = Notification.permission
+  if (permission !== 'granted') {
+    permission = await Notification.requestPermission()
+  }
+  if (permission !== 'granted') {
+    return { ok: false, reason: permission }
+  }
+
+  const options = {
+    body: 'Se você está vendo isto, as notificações funcionam ✅',
+    icon: '/icon.svg',
+    badge: '/icon.svg',
+    vibrate: [100, 50, 100],
+    tag: 'test-notification',
+    data: { url: '/?app=1' },
+  }
+
+  if ('serviceWorker' in navigator) {
+    const reg = await navigator.serviceWorker.ready
+    await reg.showNotification('Notificação de teste', options)
+  } else {
+    new Notification('Notificação de teste', options)
+  }
+  return { ok: true }
+}
+
 export async function notifyListUpdated(listName, pendingCount) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return
   const reg = await navigator.serviceWorker.ready
