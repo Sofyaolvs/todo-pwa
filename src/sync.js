@@ -96,8 +96,8 @@ export async function notifyListUpdated(listName, pendingCount) {
   const reg = await navigator.serviceWorker.ready
   await reg.showNotification(listName, {
     body: pendingCount > 0
-      ? `${pendingCount} ${pendingCount === 1 ? 'item' : 'itens'} na lista`
-      : 'lista completa',
+      ? `Veja seus itens de compras — ${pendingCount} ${pendingCount === 1 ? 'item' : 'itens'} na lista`
+      : 'Veja seus itens de compras — lista completa',
     icon: '/icon.svg',
     badge: '/icon.svg',
     vibrate: [100, 50, 100],
